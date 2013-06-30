@@ -8,12 +8,11 @@ using ScrollsModLoader.Interfaces;
 using UnityEngine;
 using Mono.Cecil;
 
-using System.Collections;
-
 // FIXME check existence of methods, private variables etc and fail gracefully!
 
 namespace RightClickInChat.mod {
     public class RightClickInChat : BaseMod {
+        private bool debug = false;
 
         //initialize everything here, Game is loaded at this point
         public RightClickInChat() {
@@ -104,22 +103,16 @@ namespace RightClickInChat.mod {
                             String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
                             foreach (ChatRooms.ChatUser user in currentRoomUsers) {
                                 if (strippedMatch.Equals(user.name)) {
-                                    if (GUILayout.Button(userMatch.Value, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
+                                    GUI.color = debug ? Color.red : Color.clear;
+                                    // add an invisible button
+                                    if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
                                         !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
                                             createUserMenu.Invoke(info.target, new object[] { user });
                                             App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                     }
-                                    GUI.color = Color.red;
-                                    GUILayout.Label(":" + userMatch.NextMatch().Value, new GUILayoutOption[] {
-                                        GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f)
-                                    });
                                 }
                             }
                         }
-                        /*GUI.color = Color.white;
-                        GUILayout.Label(current.text, chatLogStyle, new GUILayoutOption[] {
-                            GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f)
-                        });*/
                         GUILayout.EndHorizontal();
                     }
                     GUILayout.EndScrollView();
