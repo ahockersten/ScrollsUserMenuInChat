@@ -10,16 +10,16 @@ using Mono.Cecil;
 
 // FIXME check existence of methods, private variables etc and fail gracefully!
 
-namespace RightClickInChat.mod {
-    public class RightClickInChat : BaseMod {
+namespace UserMenuInChat.mod {
+    public class UserMenuInChat : BaseMod {
         private bool debug = false;
 
-        public RightClickInChat() {
+        public UserMenuInChat() {
         }
 
 
         public static string GetName() {
-            return "RightClickInChat";
+            return "UserMenuInChat";
         }
 
         public static int GetVersion() {
@@ -33,7 +33,7 @@ namespace RightClickInChat.mod {
                 };
             }
             catch {
-                Console.WriteLine("RightClickInChat failed to connect to methods used.");
+                Console.WriteLine("UserMenuInChat failed to connect to methods used.");
                 return new MethodDefinition[] { };
             }
         }

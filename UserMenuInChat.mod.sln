@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RightClickInChat.mod", "RightClickInChat.mod\RightClickInChat.mod.csproj", "{7DF5DEE9-EA96-4095-9EC2-D237C0B888BB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UserMenuInChat.mod", "UserMenuInChat.mod\UserMenuInChat.mod.csproj", "{7DF5DEE9-EA96-4095-9EC2-D237C0B888BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,6 +18,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = RightClickInChat.mod\RightClickInChat.mod.csproj
+		StartupItem = UserMenuInChat.mod\UserMenuInChat.mod.csproj
 	EndGlobalSection
 EndGlobal
