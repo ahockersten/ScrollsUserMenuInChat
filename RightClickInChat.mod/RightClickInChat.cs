@@ -14,7 +14,6 @@ namespace RightClickInChat.mod {
     public class RightClickInChat : BaseMod {
         private bool debug = false;
 
-        //initialize everything here, Game is loaded at this point
         public RightClickInChat() {
         }
 
@@ -27,8 +26,6 @@ namespace RightClickInChat.mod {
             return 1;
         }
 
-        //only return MethodDefinitions you obtained through the scrollsTypes object
-        //safety first! surround with try/catch and return an empty array in case it fails
         public static MethodDefinition[] GetHooks(TypeDefinitionCollection scrollsTypes, int version) {
             try {
                 return new MethodDefinition[] {
@@ -62,10 +59,7 @@ namespace RightClickInChat.mod {
                     MethodInfo createUserMenu = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
 
                     GUILayout.BeginArea(chatlogAreaInner);
-                    chatScroll = GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width), GUILayout.Height(chatlogAreaInner.height)});
-                    if (chatScroll.y != float.PositiveInfinity) {
-                        maxScroll = Mathf.Max(maxScroll, chatScroll.y);
-                    }
+                    GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width), GUILayout.Height(chatlogAreaInner.height)});
                     foreach (ChatRooms.ChatLine current in currentRoomChatLog.getLines()) {
                         GUILayout.BeginHorizontal(new GUILayoutOption[0]);
                         // set invisible draw color. We want the layout effects of drawing stuff, but we let the 
@@ -80,7 +74,7 @@ namespace RightClickInChat.mod {
                         Match userMatch = userRegex.Match(current.text);
                         if (userMatch.Success) {
                             List<ChatRooms.ChatUser> currentRoomUsers = chatRooms.GetCurrentRoomUsers();
-                            // strip HTML from results. Yes. I know. Regexex should not be used on XML, but here it
+                            // strip HTML from results. Yes. I know. Regexes should not be used on XML, but here it
                             // should not pose a problem
                             String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
                             bool foundUser = false;
