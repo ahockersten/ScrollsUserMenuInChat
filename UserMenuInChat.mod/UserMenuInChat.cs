@@ -8,15 +8,18 @@ using ScrollsModLoader.Interfaces;
 using UnityEngine;
 using Mono.Cecil;
 
-// FIXME check existence of methods, private variables etc and fail gracefully!
-
 namespace UserMenuInChat.mod {
     public class UserMenuInChat : BaseMod {
         private bool debug = false;
+        private ChatUI target = null;
+        private ChatRooms chatRooms;
+        private GUIStyle timeStampStyle;
+        private GUIStyle chatLogStyle;
+        private ContextMenu<ChatRooms.ChatUser> userContextMenu;
+        private MethodInfo createUserMenu;
 
         public UserMenuInChat() {
         }
-
 
         public static string GetName() {
             return "UserMenuInChat";
@@ -46,17 +49,20 @@ namespace UserMenuInChat.mod {
 
         public override void AfterInvoke(InvocationInfo info, ref object returnValue) {
             if (info.target is ChatUI && info.targetMethod.Equals("OnGUI")) {
-                ChatRooms chatRooms = (ChatRooms)typeof(ChatUI).GetField("chatRooms", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                if (target != (ChatUI)info.target) {
+                    chatRooms = (ChatRooms)typeof(ChatUI).GetField("chatRooms", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    timeStampStyle = (GUIStyle)typeof(ChatUI).GetField("timeStampStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    chatLogStyle = (GUIStyle)typeof(ChatUI).GetField("chatLogStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    createUserMenu = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
+                    target = (ChatUI)info.target;
+                }
                 ChatRooms.RoomLog currentRoomChatLog = chatRooms.GetCurrentRoomChatLog();
                 if (currentRoomChatLog != null) {
+                    // these need to be refetched on every run, because otherwise old values will be used
                     Rect chatlogAreaInner = (Rect)typeof(ChatUI).GetField("chatlogAreaInner", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     Vector2 chatScroll = (Vector2)typeof(ChatUI).GetField("chatScroll", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    float maxScroll = (float)typeof(ChatUI).GetField("maxScroll", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    GUIStyle timeStampStyle = (GUIStyle)typeof(ChatUI).GetField("timeStampStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    GUIStyle chatLogStyle = (GUIStyle)typeof(ChatUI).GetField("chatLogStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    MethodInfo createUserMenu = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
 
                     GUILayout.BeginArea(chatlogAreaInner);
                     GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width), GUILayout.Height(chatlogAreaInner.height)});
