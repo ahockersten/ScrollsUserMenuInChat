@@ -60,40 +60,22 @@ namespace RightClickInChat.mod {
                     bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     MethodInfo createUserMenu = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
-                    
-                    GUI.color = new Color(1f, 1f, 1f, 0.5f);
-                    GUI.Box(new Rect(chatlogAreaInner.xMax - 15f, chatlogAreaInner.y, 15f, chatlogAreaInner.height), string.Empty);
-                    GUI.color = Color.white;
+
                     GUILayout.BeginArea(chatlogAreaInner);
-                    chatScroll = GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] {
-                        GUILayout.Width(chatlogAreaInner.width),
-                        GUILayout.Height(chatlogAreaInner.height)
-                    });
+                    chatScroll = GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width), GUILayout.Height(chatlogAreaInner.height)});
                     if (chatScroll.y != float.PositiveInfinity) {
                         maxScroll = Mathf.Max(maxScroll, chatScroll.y);
                     }
                     foreach (ChatRooms.ChatLine current in currentRoomChatLog.getLines()) {
-                        AdminRole senderAdminRole = (AdminRole)typeof(ChatRooms.ChatLine).GetField("senderAdminRole", BindingFlags.Instance | BindingFlags.Public).GetValue(current);
                         GUILayout.BeginHorizontal(new GUILayoutOption[0]);
+                        // set invisible draw color. We want the layout effects of drawing stuff, but we let the 
+                        // original code do all of the actual drawing
+                        Color oldColor = GUI.color;
+                        GUI.color = debug ? Color.red : Color.clear;
                         GUILayout.Label(current.timestamp, timeStampStyle, new GUILayoutOption[] {
-                            GUILayout.Width(20f + (float)Screen.height * 0.042f)
-                        });
-                        GUI.color = new Color(1f, 1f, 1f, 0.65f);
-                        if (senderAdminRole == AdminRole.Mojang) {
-                            GUILayout.Label(ResourceManager.LoadTexture("ChatUI/mojang_icon"), new GUILayoutOption[] {
-	                            GUILayout.Width((float)chatLogStyle.fontSize),
-	                            GUILayout.Height((float)chatLogStyle.fontSize)
-                            });
-                        }
-                        else {
-                            if (senderAdminRole == AdminRole.Moderator) {
-                                GUILayout.Label(ResourceManager.LoadTexture("ChatUI/moderator_icon"), new GUILayoutOption[] {
-           		                    GUILayout.Width((float)chatLogStyle.fontSize),
-		                            GUILayout.Height((float)chatLogStyle.fontSize)
-	                            });
-                            }
-                        }
-                        string userRegexStr = @"[^:]*"; // find first instance of ':'
+                            GUILayout.Width(20f + (float)Screen.height * 0.042f)});
+                        // match until first instance of ':' (find username)
+                        string userRegexStr = @"[^:]*";
                         Regex userRegex = new Regex(userRegexStr);
                         Match userMatch = userRegex.Match(current.text);
                         if (userMatch.Success) {
@@ -101,18 +83,25 @@ namespace RightClickInChat.mod {
                             // strip HTML from results. Yes. I know. Regexex should not be used on XML, but here it
                             // should not pose a problem
                             String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
+                            bool foundUser = false;
                             foreach (ChatRooms.ChatUser user in currentRoomUsers) {
                                 if (strippedMatch.Equals(user.name)) {
-                                    GUI.color = debug ? Color.red : Color.clear;
-                                    // add an invisible button
+                                    foundUser = true;
                                     if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
                                         !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
-                                            createUserMenu.Invoke(info.target, new object[] { user });
-                                            App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
+                                        createUserMenu.Invoke(info.target, new object[] { user });
+                                        App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                     }
                                 }
                             }
+                            // do the drawing found in the original code to make sure we don't fall out of sync
+                            if (!foundUser) {
+                                GUILayout.Label(current.text, chatLogStyle, new GUILayoutOption[] {
+				                        GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f)});
+                            }
                         }
+                        // restore old color. Should not be necessary, but it does not hurt to be paranoid
+                        GUI.color = oldColor;
                         GUILayout.EndHorizontal();
                     }
                     GUILayout.EndScrollView();
