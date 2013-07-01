@@ -15,7 +15,6 @@ namespace UserMenuInChat.mod {
         private ChatRooms chatRooms;
         private GUIStyle timeStampStyle;
         private GUIStyle chatLogStyle;
-        private ContextMenu<ChatRooms.ChatUser> userContextMenu;
         private MethodInfo createUserMenu;
 
         public UserMenuInChat() {
@@ -53,7 +52,6 @@ namespace UserMenuInChat.mod {
                     chatRooms = (ChatRooms)typeof(ChatUI).GetField("chatRooms", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     timeStampStyle = (GUIStyle)typeof(ChatUI).GetField("timeStampStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     chatLogStyle = (GUIStyle)typeof(ChatUI).GetField("chatLogStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     createUserMenu = typeof(ChatUI).GetMethod("CreateUserMenu", BindingFlags.Instance | BindingFlags.NonPublic);
                     target = (ChatUI)info.target;
                 }
@@ -62,7 +60,6 @@ namespace UserMenuInChat.mod {
                     // these need to be refetched on every run, because otherwise old values will be used
                     Rect chatlogAreaInner = (Rect)typeof(ChatUI).GetField("chatlogAreaInner", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     Vector2 chatScroll = (Vector2)typeof(ChatUI).GetField("chatScroll", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                    bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
 
                     GUILayout.BeginArea(chatlogAreaInner);
                     GUILayout.BeginScrollView(chatScroll, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width), GUILayout.Height(chatlogAreaInner.height)});
@@ -86,9 +83,11 @@ namespace UserMenuInChat.mod {
                             bool foundUser = false;
                             foreach (ChatRooms.ChatUser user in currentRoomUsers) {
                                 if (strippedMatch.Equals(user.name)) {
+                                    bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                                    ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                                     foundUser = true;
-                                    if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
-                                        !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
+                                    if (!(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null && 
+                                        GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) })) {
                                         createUserMenu.Invoke(info.target, new object[] { user });
                                         App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                     }
