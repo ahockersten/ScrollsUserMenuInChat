@@ -86,8 +86,8 @@ namespace UserMenuInChat.mod {
                                     bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                                     ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                                     foundUser = true;
-                                    if (!(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null && 
-                                        GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) })) {
+                                    if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
+                                        !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
                                         createUserMenu.Invoke(info.target, new object[] { user });
                                         App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                     }
