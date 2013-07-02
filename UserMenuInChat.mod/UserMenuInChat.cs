@@ -18,6 +18,10 @@ namespace UserMenuInChat.mod {
         private GUIStyle chatLogStyle;
         private MethodInfo createUserMenu;
         private Regex userRegex;
+        // dict from room log, to another dict that maps chatline to a username
+        private Dictionary<ChatRooms.RoomLog, Dictionary<ChatRooms.ChatLine, string>> chatLineToUserNameCache = new Dictionary<ChatRooms.RoomLog, Dictionary<ChatRooms.ChatLine, string>>();
+        // dict from room name, to another dict that maps username to ChatUser
+        private Dictionary<string, Dictionary<string, ChatRooms.ChatUser>> userNameToUserCache = new Dictionary<string, Dictionary<string, ChatRooms.ChatUser>>();
 
         public UserMenuInChat() {
             // match until first instance of ':' (finds the username)
@@ -36,6 +40,8 @@ namespace UserMenuInChat.mod {
         public static MethodDefinition[] GetHooks(TypeDefinitionCollection scrollsTypes, int version) {
             try {
                 return new MethodDefinition[] {
+                    scrollsTypes["ChatRooms"].Methods.GetMethod("LeaveRoom", new Type[]{typeof(string)}),
+                    scrollsTypes["ChatRooms"].Methods.GetMethod("SetRoomInfo", new Type[] {typeof(RoomInfoMessage)}),
                     scrollsTypes["ChatUI"].Methods.GetMethod("OnGUI")[0]
                 };
             }
@@ -45,12 +51,34 @@ namespace UserMenuInChat.mod {
         }
 
         public override bool BeforeInvoke(InvocationInfo info, out object returnValue) {
+            if (info.target is ChatRooms && info.targetMethod.Equals("LeaveRoom")) {
+                string room = (string)info.arguments[0];
+                if (userNameToUserCache.ContainsKey(room)) {
+                    userNameToUserCache.Remove(room);
+                }
+            }
+
             returnValue = null;
             return false;
         }
 
         public override void AfterInvoke(InvocationInfo info, ref object returnValue) {
-            if (info.target is ChatUI && info.targetMethod.Equals("OnGUI")) {
+            if (info.target is ChatRooms && info.targetMethod.Equals("SetRoomInfo")) {
+                RoomInfoMessage roomInfo = (RoomInfoMessage) info.arguments[0];
+                if (!userNameToUserCache.ContainsKey(roomInfo.roomName)) {
+                    userNameToUserCache.Add(roomInfo.roomName, new Dictionary<string, ChatRooms.ChatUser>());
+                }
+                Dictionary<string, ChatRooms.ChatUser> userCache = userNameToUserCache[roomInfo.roomName];
+                userCache.Clear();
+
+                RoomInfoMessage.RoomInfoProfile[] profiles = roomInfo.profiles;
+                for (int i = 0; i < profiles.Length; i++) {
+                    RoomInfoMessage.RoomInfoProfile p = profiles[i];
+                    ChatRooms.ChatUser user = ChatRooms.ChatUser.fromRoomInfoProfile(p);
+                    userCache.Add(user.name, user);
+                }
+            }
+            else if (info.target is ChatUI && info.targetMethod.Equals("OnGUI")) {
                 if (target != (ChatUI)info.target) {
                     chatRooms = (ChatRooms)typeof(ChatUI).GetField("chatRooms", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     timeStampStyle = (GUIStyle)typeof(ChatUI).GetField("timeStampStyle", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
@@ -80,29 +108,40 @@ namespace UserMenuInChat.mod {
                         GUILayout.BeginHorizontal(new GUILayoutOption[0]);
                         GUILayout.Label(current.timestamp, timeStampStyle, new GUILayoutOption[] {
                             GUILayout.Width(20f + (float)Screen.height * 0.042f)});
-                        Match userMatch = userRegex.Match(current.text);
-                        if (userMatch.Success) {
-                            List<ChatRooms.ChatUser> currentRoomUsers = chatRooms.GetCurrentRoomUsers();
-                            // strip HTML from user name (usually a color). Yes. I know. Regexes should not be used on 
-                            // XML, but here it should not pose a problem
-                            String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
-                            bool foundUser = false;
-                            foreach (ChatRooms.ChatUser user in currentRoomUsers) {
-                                if (strippedMatch.Equals(user.name)) {
-                                    foundUser = true;
-                                    if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
-                                        !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
-                                        createUserMenu.Invoke(info.target, new object[] { user });
-                                        App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
-                                    }
-                                    break;
+
+                        if (!chatLineToUserNameCache.ContainsKey(currentRoomChatLog)) {
+                            chatLineToUserNameCache.Add(currentRoomChatLog, new Dictionary<ChatRooms.ChatLine, string>());
+                        }
+                        Dictionary<ChatRooms.ChatLine, string> userCache = chatLineToUserNameCache[currentRoomChatLog];
+                        if (!userCache.ContainsKey(current)) {
+                            Match userMatch = userRegex.Match(current.text);
+                            if (userMatch.Success) {
+                                // strip HTML from user name (usually a color). Yes. I know. Regexes should not be used on 
+                                // XML, but here it should not pose a problem
+                                String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
+                                userCache.Add(current, strippedMatch);
+                            }
+                        }
+                        string sender;
+                        bool foundSender = userCache.TryGetValue(current, out sender);
+                        bool foundUser = false;
+                        Dictionary<string, ChatRooms.ChatUser> roomUsers;
+                        bool foundRoomUsers = userNameToUserCache.TryGetValue(chatRooms.GetCurrentRoom(), out roomUsers);
+                        if (foundSender && foundRoomUsers) {
+                            ChatRooms.ChatUser user;
+                            foundUser = roomUsers.TryGetValue(sender, out user);
+                            if (foundUser) {
+                                if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
+                                    !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
+                                    createUserMenu.Invoke(info.target, new object[] { user });
+                                    App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                 }
                             }
-                            // do the drawing found in the original code to make sure we don't fall out of sync
-                            if (!foundUser) {
-                                GUILayout.Label(current.text, chatLogStyle, new GUILayoutOption[] {
+                        }
+                        // do the drawing found in the original code to make sure we don't fall out of sync
+                        if (!foundUser || !foundSender || !foundRoomUsers) {
+                            GUILayout.Label(current.text, chatLogStyle, new GUILayoutOption[] {
 				                        GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f)});
-                            }
                         }
                         GUILayout.EndHorizontal();
                     }
