@@ -16,8 +16,12 @@ namespace UserMenuInChat.mod {
         private GUIStyle timeStampStyle;
         private GUIStyle chatLogStyle;
         private MethodInfo createUserMenu;
+        private Regex userRegex;
 
         public UserMenuInChat() {
+            // match until first instance of ':' (finds the username)
+            userRegex = new Regex(@"[^:]*"
+                /*, RegexOptions.Compiled*/); // the version of Mono used by Scrolls version of Unity does not support compiled regexes
         }
 
         public static string GetName() {
@@ -59,8 +63,10 @@ namespace UserMenuInChat.mod {
                     // these need to be refetched on every run, because otherwise old values will be used
                     Rect chatlogAreaInner = (Rect)typeof(ChatUI).GetField("chatlogAreaInner", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                     Vector2 chatScroll = (Vector2)typeof(ChatUI).GetField("chatScroll", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
+                    ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
 
-                    // set invisible draw color. We want the layout effects of drawing stuff, but we let the 
+                    // set invisible draw color. We want the layout effects of drawing stuff, but we let the
                     // original code do all of the actual drawing
                     Color oldColor = GUI.color;
                     GUI.color = debug ? Color.red : Color.clear;
@@ -70,9 +76,6 @@ namespace UserMenuInChat.mod {
                         GUILayout.BeginHorizontal(new GUILayoutOption[0]);
                         GUILayout.Label(current.timestamp, timeStampStyle, new GUILayoutOption[] {
                             GUILayout.Width(20f + (float)Screen.height * 0.042f)});
-                        // match until first instance of ':' (find username)
-                        string userRegexStr = @"[^:]*";
-                        Regex userRegex = new Regex(userRegexStr);
                         Match userMatch = userRegex.Match(current.text);
                         if (userMatch.Success) {
                             List<ChatRooms.ChatUser> currentRoomUsers = chatRooms.GetCurrentRoomUsers();
@@ -82,8 +85,6 @@ namespace UserMenuInChat.mod {
                             bool foundUser = false;
                             foreach (ChatRooms.ChatUser user in currentRoomUsers) {
                                 if (strippedMatch.Equals(user.name)) {
-                                    bool allowSendingChallenges = (bool)typeof(ChatUI).GetField("allowSendingChallenges", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
-                                    ContextMenu<ChatRooms.ChatUser> userContextMenu = (ContextMenu<ChatRooms.ChatUser>)typeof(ChatUI).GetField("userContextMenu", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(info.target);
                                     foundUser = true;
                                     if (GUILayout.Button(current.text, chatLogStyle, new GUILayoutOption[] { GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f) }) &&
                                         !(App.MyProfile.ProfileInfo.id == user.id) && allowSendingChallenges && userContextMenu == null) {
