@@ -10,7 +10,7 @@ using Mono.Cecil;
 
 namespace UserMenuInChat.mod {
     public class UserMenuInChat : BaseMod {
-        private bool debug = false;
+        private const bool debug = false;
         private ChatUI target = null;
         private ChatRooms chatRooms;
         private GUIStyle timeStampStyle;
