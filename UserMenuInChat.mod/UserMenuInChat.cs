@@ -91,6 +91,7 @@ namespace UserMenuInChat.mod {
                                         createUserMenu.Invoke(info.target, new object[] { user });
                                         App.AudioScript.PlaySFX("Sounds/hyperduck/UI/ui_button_click");
                                     }
+                                    break;
                                 }
                             }
                             // do the drawing found in the original code to make sure we don't fall out of sync
