@@ -100,12 +100,12 @@ namespace UserMenuInChat.mod {
 				                        GUILayout.Width(chatlogAreaInner.width - (float)Screen.height * 0.1f - 20f)});
                             }
                         }
-                        // restore old color. Should not be necessary, but it does not hurt to be paranoid
-                        GUI.color = oldColor;
                         GUILayout.EndHorizontal();
                     }
                     GUILayout.EndScrollView();
                     GUILayout.EndArea();
+                    // restore old color. Should not be necessary, but it does not hurt to be paranoid
+                    GUI.color = oldColor;
                 }
             }
             return;
