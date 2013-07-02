@@ -43,7 +43,6 @@ namespace UserMenuInChat.mod {
             }
         }
 
-
         public override bool BeforeInvoke(InvocationInfo info, out object returnValue) {
             returnValue = null;
             return false;
