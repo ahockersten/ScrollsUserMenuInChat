@@ -11,6 +11,7 @@ using Mono.Cecil;
 namespace UserMenuInChat.mod {
     public class UserMenuInChat : BaseMod {
         private const bool debug = false;
+
         private ChatUI target = null;
         private ChatRooms chatRooms;
         private GUIStyle timeStampStyle;
@@ -82,8 +83,8 @@ namespace UserMenuInChat.mod {
                         Match userMatch = userRegex.Match(current.text);
                         if (userMatch.Success) {
                             List<ChatRooms.ChatUser> currentRoomUsers = chatRooms.GetCurrentRoomUsers();
-                            // strip HTML from results. Yes. I know. Regexes should not be used on XML, but here it
-                            // should not pose a problem
+                            // strip HTML from user name (usually a color). Yes. I know. Regexes should not be used on 
+                            // XML, but here it should not pose a problem
                             String strippedMatch = Regex.Replace(userMatch.Value, @"<[^>]*>", String.Empty);
                             bool foundUser = false;
                             foreach (ChatRooms.ChatUser user in currentRoomUsers) {
